@@ -1,0 +1,5 @@
+*.o
+*.out
+main
+unn-lab1
+.vscode/
