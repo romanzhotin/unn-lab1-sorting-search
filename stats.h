@@ -7,4 +7,9 @@ typedef struct {
     double time;                    // время в секундах
 } sort_stats_t;
 
+typedef struct {
+    long index;                     // индекс найденного элемента (-1, если не найдено)
+    unsigned long long comparisons; // количество сравнений
+} search_stats_t;
+
 #endif // STATS_H
