@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <string.h> // Для memcpy
+#include <string.h>
 #include "menu.h"
 #include "array_utils.h"
 #include "common.h"
 #include "sorts.h"
+#include "searches.h"
 
 static void print_header(void) {
     printf("============================================================\n");
@@ -127,7 +128,73 @@ void menu_run(void) {
                 free(work);
                 break;
             }
-            case 3: printf("[Заглушка] Поиск\n"); break;
+            case 3: {
+                if (!arr || n == 0) {
+                    printf("Сначала введите или сгенерируйте массив!\n");
+                    break;
+                }
+                
+                int target;
+                printf("\nВведите число для поиска: ");
+                if (scanf("%d", &target) != 1) {
+                    while (getchar() != '\n');
+                    printf("Ошибка ввода!\n");
+                    break;
+                }
+
+                printf("\nДоступные алгоритмы поиска:\n");
+                for (size_t i = 0; i < SEARCH_ALGOS_COUNT; i++) {
+                    printf(" %zu. %s\n", i + 1, SEARCH_ALGOS[i].name);
+                }
+                printf("Выберите алгоритм: ");
+                int search_choice;
+                if (scanf("%d", &search_choice) != 1 || search_choice < 1 || search_choice > (int)SEARCH_ALGOS_COUNT) {
+                    while (getchar() != '\n');
+                    printf("Неверный выбор!\n");
+                    break;
+                }
+
+                int *search_arr = arr; // По умолчанию ищем в оригинале
+                int *sorted_copy = NULL;
+
+                // Если алгоритм требует сортировки (например, бинарный поиск)
+                if (SEARCH_ALGOS[search_choice - 1].requires_sorted) {
+                    printf("Алгоритм \"%s\" требует отсортированного массива.\n", SEARCH_ALGOS[search_choice - 1].name);
+                    printf("Создаем копию и сортируем её (Быстрая сортировка)...\n");
+                    
+                    sorted_copy = malloc(n * sizeof(int));
+                    if (!sorted_copy) {
+                        printf("Ошибка памяти!\n");
+                        break;
+                    }
+                    memcpy(sorted_copy, arr, n * sizeof(int));
+                    
+                    // Ищем быструю сортировку в реестре и применяем её к копии
+                    for (size_t i = 0; i < SORT_ALGOS_COUNT; i++) {
+                        if (strcmp(SORT_ALGOS[i].name, "Быстрая") == 0) {
+                            sort_stats_t tmp_stats = {0};
+                            SORT_ALGOS[i].fn(sorted_copy, n, &tmp_stats);
+                            break;
+                        }
+                    }
+                    search_arr = sorted_copy;
+                }
+
+                search_stats_t sstats = {0};
+                printf("\nВыполняется поиск \"%s\"...\n", SEARCH_ALGOS[search_choice - 1].name);
+                SEARCH_ALGOS[search_choice - 1].fn(search_arr, n, target, &sstats);
+
+                printf("\n--- РЕЗУЛЬТАТЫ ---\n");
+                printf("Сравнений: %llu\n", sstats.comparisons);
+                if (sstats.index != -1) {
+                    printf("Элемент найден! Индекс: %ld\n", sstats.index);
+                } else {
+                    printf("Элемент НЕ найден\n");
+                }
+
+                if (sorted_copy) free(sorted_copy);
+                break;
+            }
             case 4: printf("[Заглушка] Сравнение сортировок\n"); break;
             case 5: printf("[Заглушка] Сравнение поисков\n"); break;
             case 6: 
