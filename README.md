@@ -4,6 +4,13 @@
 
 ## Как собрать и запустить
 
+Сначала склонируйте репозиторий:
+
+```bash
+git clone https://github.com/romanzhotin/unn-lab1-sorting-search.git
+cd unn-lab1-sorting-search
+```
+
 Для сборки нужен `gcc` и `make`.
 
 ```bash
