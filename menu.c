@@ -7,6 +7,7 @@
 #include "common.h"
 #include "sorts.h"
 #include "searches.h"
+#include "hbar.h"
 
 static void print_header(void) {
     printf("============================================================\n");
@@ -195,8 +196,130 @@ void menu_run(void) {
                 if (sorted_copy) free(sorted_copy);
                 break;
             }
-            case 4: printf("[Заглушка] Сравнение сортировок\n"); break;
-            case 5: printf("[Заглушка] Сравнение поисков\n"); break;
+            case 4: {
+                if (!arr || n == 0) {
+                    printf("Сначала введите или сгенерируйте массив!\n");
+                    break;
+                }
+                
+                printf("\n============================================================\n");
+                printf("СРАВНЕНИЕ АЛГОРИТМОВ СОРТИРОВКИ\n");
+                printf("============================================================\n");
+
+                size_t cnt = SORT_ALGOS_COUNT;
+
+                double *times = malloc(cnt * sizeof(double));
+                double *cmps  = malloc(cnt * sizeof(double));
+                double *swps  = malloc(cnt * sizeof(double));
+                const char **names = malloc(cnt * sizeof(char*));
+
+                if (!times || !cmps || !swps || !names) {
+                    printf("Ошибка памяти!\n");
+                    free(times); free(cmps); free(swps); free(names);
+                    break;
+                }
+
+                for (size_t i = 0; i < cnt; i++) {
+                    int *work = malloc(n * sizeof(int));
+                    if (!work) continue;
+                    memcpy(work, arr, n * sizeof(int));
+                    
+                    sort_stats_t stats = {0};
+                    SORT_ALGOS[i].fn(work, n, &stats);
+                    
+                    times[i] = stats.time;
+                    cmps[i]  = (double)stats.comparisons;
+                    swps[i]  = (double)stats.swaps;
+                    names[i] = SORT_ALGOS[i].name;
+                    
+                    free(work);
+                }
+
+                hbar_chart("Время выполнения (секунды)", names, times, cnt, 40, 1);
+                hbar_chart("Количество сравнений", names, cmps, cnt, 40, 0);
+                hbar_chart("Количество перестановок", names, swps, cnt, 40, 0);
+
+                free(times);
+                free(cmps);
+                free(swps);
+                free(names);
+                break;
+            }
+            case 5: {
+                if (!arr || n == 0) {
+                    printf("Сначала введите или сгенерируйте массив!\n");
+                    break;
+                }
+                
+                int target;
+                printf("\nВведите число для поиска: ");
+                if (scanf("%d", &target) != 1) {
+                    while (getchar() != '\n');
+                    printf("Ошибка ввода!\n");
+                    break;
+                }
+
+                printf("\n============================================================\n");
+                printf("СРАВНЕНИЕ АЛГОРИТМОВ ПОИСКА\n");
+                printf("============================================================\n");
+
+                size_t cnt = SEARCH_ALGOS_COUNT;
+
+                double *cmps  = malloc(cnt * sizeof(double));
+                double *times = malloc(cnt * sizeof(double));
+                const char **names = malloc(cnt * sizeof(char*));
+
+                if (!cmps || !times || !names) {
+                    printf("Ошибка памяти!\n");
+                    free(cmps); free(times); free(names);
+                    break;
+                }
+
+                int *sorted_copy = malloc(n * sizeof(int));
+                if (!sorted_copy) {
+                    printf("Ошибка памяти!\n");
+                    free(cmps); free(times); free(names);
+                    break;
+                }
+                memcpy(sorted_copy, arr, n * sizeof(int));
+                
+                for (size_t i = 0; i < SORT_ALGOS_COUNT; i++) {
+                    if (strcmp(SORT_ALGOS[i].name, "Быстрая") == 0) {
+                        sort_stats_t tmp_stats = {0};
+                        SORT_ALGOS[i].fn(sorted_copy, n, &tmp_stats);
+                        break;
+                    }
+                }
+
+                for (size_t i = 0; i < cnt; i++) {
+                    search_stats_t sstats = {0};
+                    int *target_arr = SEARCH_ALGOS[i].requires_sorted ? sorted_copy : arr;
+                    
+                    clock_t t0 = clock();
+                    SEARCH_ALGOS[i].fn(target_arr, n, target, &sstats);
+                    double t = (double)(clock() - t0) / CLOCKS_PER_SEC;
+
+                    cmps[i]  = (double)sstats.comparisons;
+                    times[i] = t;
+                    names[i] = SEARCH_ALGOS[i].name;
+
+                    printf("  %s: ", names[i]);
+                    if (sstats.index != -1) {
+                        printf("Элемент найден! Индекс: %ld\n", sstats.index);
+                    } else {
+                        printf("Элемент НЕ найден\n");
+                    }
+                }
+                free(sorted_copy);
+
+                hbar_chart("Время выполнения (секунды)", names, times, cnt, 40, 1);
+                hbar_chart("Количество сравнений", names, cmps, cnt, 40, 0);
+
+                free(cmps);
+                free(times);
+                free(names);
+                break;
+            }
             case 6: 
                 printf("\nТекущий массив:\n");
                 print_array(arr, n);
